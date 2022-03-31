@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "btellraw",
+  "version": "${version}",
+
+  "name": "Better Tellraw",
+  "description": "A \"better\" tellraw.",
+  "authors": [
+    "LX86"
+  ],
+  "contact": {
+    "sources": "https://github.com/Kenny-Hui/Better-Tellraw"
+  },
+
+  "license": "MIT",
+  "icon": "assets/btellraw/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.lx.bettertellraw.Main"
+    ]
+  },
+  "mixins": [
+    "btellraw.mixins.json"
+  ],
+
+  "depends": {
+    "fabric": "*",
+    "minecraft": "1.17.x"
+  },
+  "suggests": {
+    "fabric-permissions-api-v0": "*"
+  }
+}
