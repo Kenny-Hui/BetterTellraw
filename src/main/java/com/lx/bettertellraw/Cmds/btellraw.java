@@ -53,6 +53,10 @@ public class btellraw {
                 .requires(Permissions.require("btw.add", 2))
                 .build();
 
+        LiteralCommandNode<ServerCommandSource> modifyNode = CommandManager
+                .literal("modify")
+                .requires(Permissions.require("btw.modify", 2))
+                .build();
 
         LiteralCommandNode<ServerCommandSource> selectorNode = CommandManager
                 .literal("entity")
@@ -71,6 +75,18 @@ public class btellraw {
                 .then(CommandManager.argument("id", StringArgumentType.string())
                         .then(CommandManager.argument("text", StringArgumentType.string())
                         .executes(ctx -> addTellraw(ctx, StringArgumentType.string()))))
+                .build();
+
+        ArgumentCommandNode<ServerCommandSource, String> modifyTellrawNode = CommandManager
+                .argument("id", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(config.TellrawList.values().stream().map(t -> t.fullID).toList(), SuggestionBuilder))
+                        .then(CommandManager.argument("text", StringArgumentType.string())
+                                .executes(ctx -> modifyTellraw(ctx, StringArgumentType.string())))
+                .build();
+
+        ArgumentCommandNode<ServerCommandSource, String> modifyTellrawTextNode = CommandManager
+                .argument("id", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(config.TellrawList.values().stream().map(t -> t.fullID).toList(), SuggestionBuilder))
+                        .then(CommandManager.argument("JSONText", TextArgumentType.text())
+                                .executes(ctx -> modifyTellraw(ctx, TextArgumentType.text())))
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, String> addTellrawTextNode = CommandManager
@@ -110,6 +126,9 @@ public class btellraw {
         tellrawNode.addChild(addNode);
             addNode.addChild(addTellrawNode);
             addNode.addChild(addTellrawTextNode);
+        tellrawNode.addChild(modifyNode);
+            modifyNode.addChild(modifyTellrawNode);
+            modifyNode.addChild(modifyTellrawTextNode);
         tellrawNode.addChild(sendNode);
             sendNode.addChild(selectorNode);
                 selectorNode.addChild(entitiesNode);
@@ -200,6 +219,28 @@ public class btellraw {
             config.saveConfig();
         }
         context.getSource().sendFeedback(new LiteralText("Tellraws added. Full ID is: " + fullID).formatted(Formatting.GREEN), false);
+        return 1;
+    }
+
+    public static int modifyTellraw(CommandContext<ServerCommandSource> context, ArgumentType type) {
+        String ID = StringArgumentType.getString(context, "id");
+        Tellraws tellrawObj = config.TellrawList.get(ID);
+
+        if(tellrawObj == null) {
+            context.getSource().sendFeedback(new LiteralText("Cannot find tellraw with ID " + ID).formatted(Formatting.RED), false);
+            return 1;
+        }
+
+        if(type instanceof StringArgumentType) {
+            tellrawObj.content = StringArgumentType.getString(context, "text");
+            config.TellrawList.put(ID, tellrawObj);
+            config.saveConfig();
+        } else {
+            tellrawObj.content = Text.Serializer.toJson(TextArgumentType.getTextArgument(context, "JSONText"));
+            config.TellrawList.put(ID, tellrawObj);
+            config.saveConfig();
+        }
+        context.getSource().sendFeedback(new LiteralText("Tellraw " + ID + " modified.").formatted(Formatting.GOLD), false);
         return 1;
     }
 }
