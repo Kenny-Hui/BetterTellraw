@@ -17,7 +17,7 @@ public class config {
 
     public static int loadConfig() {
         if(!Files.exists(TELLRAW_DIR.toPath())) {
-            Main.LOGGER.info("[BetterTellraw] Tellraw folder not found, generating one.");
+            Main.LOGGER.info("[BetterTellraw] Tellraws folder not found, generating one.");
             generateConfig();
             /* Load the config again from the files we just generated. */
             loadConfig();
@@ -27,16 +27,13 @@ public class config {
         Main.LOGGER.info("[BetterTellraw] Reading Config...");
         TellrawList.clear();
 
-        int totalTellraw = Objects.requireNonNull(TELLRAW_DIR.listFiles()).length;
         int loadedTellraw = 0;
 
         for (File file : Objects.requireNonNull(TELLRAW_DIR.listFiles())) {
-            if (readTellraws(file.toPath())) {
-                loadedTellraw++;
-            }
+            loadedTellraw += readTellraws(file.toPath());
         }
 
-        Main.LOGGER.info("[BetterTellraw] " + loadedTellraw + " / " + totalTellraw + "tellraws Loaded");
+        Main.LOGGER.info("[BetterTellraw] " + loadedTellraw + " tellraws Loaded");
         return loadedTellraw;
     }
 
@@ -76,7 +73,8 @@ public class config {
         }
     }
 
-    public static boolean readTellraws(Path tellrawLocation) {
+    public static int readTellraws(Path tellrawLocation) {
+        int loadedTellraw = 0;
         try {
             final JsonObject jsonConfig = new JsonParser().parse(String.join("", Files.readAllLines(tellrawLocation))).getAsJsonObject();
 
@@ -86,11 +84,13 @@ public class config {
                 String fullID = FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()) + "." + tellrawID;
                 Tellraws tellrawObj = new Tellraws(FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()), jsontext, fullID, tellrawID);
                 TellrawList.put(fullID, tellrawObj);
+                loadedTellraw++;
             }
-            return true;
+            return loadedTellraw;
         } catch (Exception e) {
+            Main.LOGGER.error("Failed to load tellraw file " + tellrawLocation.getFileName().toString());
             e.printStackTrace();
-            return false;
+            return 0;
         }
     }
 }
