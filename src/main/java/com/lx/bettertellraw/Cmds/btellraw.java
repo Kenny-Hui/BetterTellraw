@@ -208,6 +208,10 @@ public class btellraw {
     public static int addTellraw(CommandContext<ServerCommandSource> context, ArgumentType type) {
         String ID = StringArgumentType.getString(context, "id");
         String fullID = StringArgumentType.getString(context, "fileName") + "." + StringArgumentType.getString(context, "id");
+        if(config.TellrawList.get(fullID) != null) {
+            context.getSource().sendFeedback(new LiteralText("Tellraw " + fullID + " already exists.").formatted(Formatting.RED), false);
+            return 1;
+        }
 
         if(type instanceof StringArgumentType) {
             Tellraws tellrawObj = new Tellraws(StringArgumentType.getString(context, "fileName"), StringArgumentType.getString(context, "text"), fullID, ID);

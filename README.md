@@ -4,9 +4,9 @@
 
 ## Enhancements
 - Create, modify and send a text messages by referencing its id.
-- [Placeholder API](https://placeholders.pb4.eu/user/default-placeholders/) support
-- String formatting support
-- Send the message to players within 2 positions easily
+- [Placeholder API](https://placeholders.pb4.eu/user/default-placeholders/) support.
+- String formatting support.
+- Send the tellraw to players within 2 positions easily.
 
 ## Usages
 Please see the [Wiki](https://github.com/Kenny-Hui/BetterTellraw/wiki) for details.
