@@ -1,9 +1,10 @@
 {
-  "required": false,
+  "required": true,
   "minVersion": "0.8",
-  "package": "com.lx.bettertellraw.mixin",
+  "package": "com.lx.bettertellraw.mixins",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
+    "CommandManagerMixin"
   ],
   "client": [
   ],

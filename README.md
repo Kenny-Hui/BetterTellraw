@@ -1,7 +1,6 @@
 # Better Tellraw
  A mod that adds a /btellraw command which provides several enhancement over vanilla's tellraw.    
- This mod only affects the server-side environment. You may use it both on both singleplayer and a dedicated multiplayer server.  
- **Requires [Fabric API](https://modrinth.com/mod/fabric-api)**
+ This mod only affects the server-side environment. You may use it both on both singleplayer and a dedicated multiplayer server.
 
 ## Enhancements
 - Create, modify and send a text messages by referencing its id.

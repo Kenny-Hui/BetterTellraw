@@ -1,9 +1,7 @@
 package com.lx.bettertellraw;
 
-import com.lx.bettertellraw.Cmds.btellraw;
 import com.lx.bettertellraw.Config.config;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.Version;
 import org.slf4j.Logger;
@@ -18,10 +16,5 @@ public class Main implements ModInitializer {
         versions = FabricLoader.getInstance().getModContainer("btellraw").get().getMetadata().getVersion();
         LOGGER.info("[BetterTellraw] Version " + versions);
         config.loadConfig();
-
-        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
-            btellraw.register(dispatcher);
-        });
     }
-
 }
