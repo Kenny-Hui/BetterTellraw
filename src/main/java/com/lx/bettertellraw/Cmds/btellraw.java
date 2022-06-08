@@ -9,8 +9,9 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import eu.pb4.placeholders.PlaceholderAPI;
-import eu.pb4.placeholders.TextParser;
+import eu.pb4.placeholders.api.PlaceholderContext;
+import eu.pb4.placeholders.api.Placeholders;
+import eu.pb4.placeholders.api.TextParserUtils;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.EntitySelector;
@@ -21,10 +22,8 @@ import net.minecraft.command.argument.TextArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.Box;
 
 import java.util.Collection;
@@ -146,15 +145,15 @@ public class btellraw {
 
     public static int reloadConfig(CommandContext<ServerCommandSource> context) {
         int tellrawLoaded = config.loadConfig();
-        context.getSource().sendFeedback(new LiteralText("Config reloaded. " + tellrawLoaded + " tellraws loaded.").formatted(Formatting.GREEN), false);
+        context.getSource().sendFeedback(Text.literal("Config reloaded. " + tellrawLoaded + " tellraws loaded.").formatted(Formatting.GREEN), false);
         return 1;
     }
 
     public static int run(Collection<ServerPlayerEntity> players, Text msg, CommandContext<ServerCommandSource> context) {
-        Text finalText = PlaceholderAPI.parseText(msg, context.getSource().getServer());
+        Text finalText = Placeholders.parseText(msg, PlaceholderContext.of(context.getSource().getServer()));
 
         for (ServerPlayerEntity player : players) {
-            player.sendSystemMessage(finalText, Util.NIL_UUID);
+            player.sendMessage(finalText, false);
         }
         return 1;
     }
@@ -187,7 +186,7 @@ public class btellraw {
         try {
             tellrawComponent = Text.Serializer.fromJson(formattedString);
         } catch (Exception ignored) {
-            tellrawComponent = TextParser.parse(formattedString);
+            tellrawComponent = TextParserUtils.formatTextSafe(formattedString);
         }
 
         return run(playerList, tellrawComponent, context);
@@ -209,7 +208,7 @@ public class btellraw {
         String ID = StringArgumentType.getString(context, "id");
         String fullID = StringArgumentType.getString(context, "fileName") + "." + StringArgumentType.getString(context, "id");
         if(config.TellrawList.get(fullID) != null) {
-            context.getSource().sendFeedback(new LiteralText("Tellraw " + fullID + " already exists.").formatted(Formatting.RED), false);
+            context.getSource().sendFeedback(Text.literal("Tellraw " + fullID + " already exists.").formatted(Formatting.RED), false);
             return 1;
         }
 
@@ -222,7 +221,7 @@ public class btellraw {
             config.TellrawList.put(fullID, tellrawObj);
             config.saveConfig();
         }
-        context.getSource().sendFeedback(new LiteralText("Tellraws added. Full ID is: " + fullID).formatted(Formatting.GREEN), false);
+        context.getSource().sendFeedback(Text.literal("Tellraws added. Full ID is: " + fullID).formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -231,20 +230,19 @@ public class btellraw {
         Tellraws tellrawObj = config.TellrawList.get(ID);
 
         if(tellrawObj == null) {
-            context.getSource().sendFeedback(new LiteralText("Cannot find tellraw with ID " + ID).formatted(Formatting.RED), false);
+            context.getSource().sendFeedback(Text.literal("Cannot find tellraw with ID " + ID).formatted(Formatting.RED), false);
             return 1;
         }
 
         if(type instanceof StringArgumentType) {
             tellrawObj.content = StringArgumentType.getString(context, "text");
-            config.TellrawList.put(ID, tellrawObj);
-            config.saveConfig();
         } else {
             tellrawObj.content = Text.Serializer.toJson(TextArgumentType.getTextArgument(context, "JSONText"));
-            config.TellrawList.put(ID, tellrawObj);
-            config.saveConfig();
         }
-        context.getSource().sendFeedback(new LiteralText("Tellraw " + ID + " modified.").formatted(Formatting.GOLD), false);
+        config.TellrawList.put(ID, tellrawObj);
+        config.saveConfig();
+
+        context.getSource().sendFeedback(Text.literal("Tellraw " + ID + " modified.").formatted(Formatting.GOLD), false);
         return 1;
     }
 }

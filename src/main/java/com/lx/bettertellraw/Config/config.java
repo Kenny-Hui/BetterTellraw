@@ -42,7 +42,7 @@ public class config {
         final JsonObject jsonConfig = new JsonObject();
 
         jsonConfig.addProperty("example1", "{\"text\": \"This is a default tellraw written in Minecraft's Raw JSON Text.\", \"color\": \"gold\"}");
-        jsonConfig.addProperty("example2", "<yellow>This is a default tellraw written with <hover:show_text:Hover Text><underline><click:open_url:https://placeholders.pb4.eu/user/text-format/>PlaceHolder's API's Simplified Text Format");
+        jsonConfig.addProperty("example2", "<yellow>This is a default tellraw written with <hover:show_text:Hover Text><underline><click:open_url:https://placeholders.pb4.eu/user/text-format/>PlaceHolder API's Simplified Text Format");
         jsonConfig.addProperty("placeholder", "<aqua>Try running the following command:\n/btellraw send entity @s example.placeholder \"3 Minutes,Maintenance\"\n\n<green>This server will restart in %s due to %s.");
         try {
             Files.write(TELLRAW_DIR.toPath().resolve("example.json"), Collections.singleton(new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(jsonConfig)));

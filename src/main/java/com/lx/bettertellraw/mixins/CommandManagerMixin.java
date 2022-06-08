@@ -2,6 +2,7 @@ package com.lx.bettertellraw.mixins;
 
 import com.lx.bettertellraw.Cmds.btellraw;
 import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,7 +16,7 @@ public abstract class CommandManagerMixin {
     @Shadow public abstract CommandDispatcher<ServerCommandSource> getDispatcher();
 
     @Inject(at = @At("RETURN"), method = "<init>")
-    private void registerCommand(CommandManager.RegistrationEnvironment environment, CallbackInfo ci) {
+    private void registerCommand(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
         btellraw.register(getDispatcher());
     }
 }
