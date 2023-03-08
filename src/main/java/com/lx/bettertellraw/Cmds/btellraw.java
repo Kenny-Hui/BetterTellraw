@@ -19,6 +19,7 @@ import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.PosArgument;
 import net.minecraft.command.argument.TextArgumentType;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -153,7 +154,7 @@ public class btellraw {
         Text finalText = Placeholders.parseText(msg, PlaceholderContext.of(context.getSource().getServer()));
 
         for (ServerPlayerEntity player : players) {
-            player.sendMessage(finalText, false);
+            player.sendMessage(finalText, MessageType.TELLRAW_COMMAND);
         }
         return 1;
     }
