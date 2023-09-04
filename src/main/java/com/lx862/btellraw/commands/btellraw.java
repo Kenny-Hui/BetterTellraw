@@ -1,7 +1,7 @@
-package com.lx.bettertellraw.Cmds;
+package com.lx862.btellraw.commands;
 
-import com.lx.bettertellraw.Config.config;
-import com.lx.bettertellraw.Data.Tellraws;
+import com.lx862.btellraw.config.Config;
+import com.lx862.btellraw.data.TellrawEntry;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -19,7 +19,6 @@ import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.PosArgument;
 import net.minecraft.command.argument.TextArgumentType;
-import net.minecraft.network.message.MessageType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -71,26 +70,26 @@ public class btellraw {
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, String> addTellrawNode = CommandManager
-                .argument("fileName", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(config.TellrawList.values().stream().map(t -> t.fileName).toList(), SuggestionBuilder))
+                .argument("fileName", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(Config.tellrawList.values().stream().map(t -> t.fileName).toList(), SuggestionBuilder))
                 .then(CommandManager.argument("id", StringArgumentType.string())
                         .then(CommandManager.argument("text", StringArgumentType.string())
                         .executes(ctx -> addTellraw(ctx, StringArgumentType.string()))))
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, String> modifyTellrawNode = CommandManager
-                .argument("id", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(config.TellrawList.values().stream().map(t -> t.fullID).toList(), SuggestionBuilder))
+                .argument("id", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(Config.tellrawList.values().stream().map(t -> t.fullID).toList(), SuggestionBuilder))
                         .then(CommandManager.argument("text", StringArgumentType.string())
                                 .executes(ctx -> modifyTellraw(ctx, StringArgumentType.string())))
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, String> modifyTellrawTextNode = CommandManager
-                .argument("id", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(config.TellrawList.values().stream().map(t -> t.fullID).toList(), SuggestionBuilder))
+                .argument("id", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(Config.tellrawList.values().stream().map(t -> t.fullID).toList(), SuggestionBuilder))
                         .then(CommandManager.argument("JSONText", TextArgumentType.text())
                                 .executes(ctx -> modifyTellraw(ctx, TextArgumentType.text())))
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, String> addTellrawTextNode = CommandManager
-                .argument("fileName", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(config.TellrawList.values().stream().map(t -> t.fileName).toList(), SuggestionBuilder))
+                .argument("fileName", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(Config.tellrawList.values().stream().map(t -> t.fileName).toList(), SuggestionBuilder))
                         .then(CommandManager.argument("id", StringArgumentType.string())
                                 .then(CommandManager.argument("JSONText", TextArgumentType.text())
                                 .executes(ctx -> addTellraw(ctx, TextArgumentType.text()))))
@@ -107,7 +106,7 @@ public class btellraw {
         ArgumentCommandNode<ServerCommandSource, String> tellrawID = CommandManager
                 .argument("tellrawID", StringArgumentType.string())
                 .executes(context -> run(StringArgumentType.getString(context, "tellrawID"), context, new String[]{}))
-                .suggests((commandContext, suggestionsBuilder) -> CommandSource.suggestMatching(config.TellrawList.keySet(), suggestionsBuilder))
+                .suggests((commandContext, suggestionsBuilder) -> CommandSource.suggestMatching(Config.tellrawList.keySet(), suggestionsBuilder))
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, Text> JSONTextNode = CommandManager
@@ -145,8 +144,8 @@ public class btellraw {
     }
 
     public static int reloadConfig(CommandContext<ServerCommandSource> context) {
-        int tellrawLoaded = config.loadConfig();
-        context.getSource().sendFeedback(Text.literal("Config reloaded. " + tellrawLoaded + " tellraws loaded.").formatted(Formatting.GREEN), false);
+        int tellrawLoaded = Config.load();
+        context.getSource().sendFeedback(() -> Text.literal("Config reloaded. " + tellrawLoaded + " tellraws loaded.").formatted(Formatting.GREEN), false);
         return 1;
     }
 
@@ -154,7 +153,7 @@ public class btellraw {
         Text finalText = Placeholders.parseText(msg, PlaceholderContext.of(context.getSource().getServer()));
 
         for (ServerPlayerEntity player : players) {
-            player.sendMessage(finalText, MessageType.TELLRAW_COMMAND);
+            player.sendMessage(finalText);
         }
         return 1;
     }
@@ -168,12 +167,12 @@ public class btellraw {
             playerList = EntityArgumentType.getPlayers(context, "players");
         }
 
-        Tellraws tellraw = config.TellrawList.get(msg);
+        TellrawEntry tellraw = Config.tellrawList.get(msg);
         String tellrawMsg;
         if(tellraw == null) {
             tellrawMsg = msg;
         } else {
-            tellrawMsg = config.TellrawList.get(msg).content;
+            tellrawMsg = Config.tellrawList.get(msg).content;
         }
 
         String formattedString;
@@ -208,30 +207,30 @@ public class btellraw {
     public static int addTellraw(CommandContext<ServerCommandSource> context, ArgumentType type) {
         String ID = StringArgumentType.getString(context, "id");
         String fullID = StringArgumentType.getString(context, "fileName") + "." + StringArgumentType.getString(context, "id");
-        if(config.TellrawList.get(fullID) != null) {
-            context.getSource().sendFeedback(Text.literal("Tellraw " + fullID + " already exists.").formatted(Formatting.RED), false);
+        if(Config.tellrawList.get(fullID) != null) {
+            context.getSource().sendFeedback(() -> Text.literal("Tellraw " + fullID + " already exists.").formatted(Formatting.RED), false);
             return 1;
         }
 
         if(type instanceof StringArgumentType) {
-            Tellraws tellrawObj = new Tellraws(StringArgumentType.getString(context, "fileName"), StringArgumentType.getString(context, "text"), fullID, ID);
-            config.TellrawList.put(fullID, tellrawObj);
-            config.saveConfig();
+            TellrawEntry tellrawObj = new TellrawEntry(StringArgumentType.getString(context, "fileName"), StringArgumentType.getString(context, "text"), fullID, ID);
+            Config.tellrawList.put(fullID, tellrawObj);
+            Config.saveConfig();
         } else {
-            Tellraws tellrawObj = new Tellraws(StringArgumentType.getString(context, "fileName"), Text.Serializer.toJson(TextArgumentType.getTextArgument(context, "JSONText")), fullID, ID);
-            config.TellrawList.put(fullID, tellrawObj);
-            config.saveConfig();
+            TellrawEntry tellrawObj = new TellrawEntry(StringArgumentType.getString(context, "fileName"), Text.Serializer.toJson(TextArgumentType.getTextArgument(context, "JSONText")), fullID, ID);
+            Config.tellrawList.put(fullID, tellrawObj);
+            Config.saveConfig();
         }
-        context.getSource().sendFeedback(Text.literal("Tellraws added. Full ID is: " + fullID).formatted(Formatting.GREEN), false);
+        context.getSource().sendFeedback(() -> Text.literal("Tellraws added. Full ID is: " + fullID).formatted(Formatting.GREEN), false);
         return 1;
     }
 
     public static int modifyTellraw(CommandContext<ServerCommandSource> context, ArgumentType type) {
         String ID = StringArgumentType.getString(context, "id");
-        Tellraws tellrawObj = config.TellrawList.get(ID);
+        TellrawEntry tellrawObj = Config.tellrawList.get(ID);
 
         if(tellrawObj == null) {
-            context.getSource().sendFeedback(Text.literal("Cannot find tellraw with ID " + ID).formatted(Formatting.RED), false);
+            context.getSource().sendFeedback(() -> Text.literal("Cannot find tellraw with ID " + ID).formatted(Formatting.RED), false);
             return 1;
         }
 
@@ -240,10 +239,10 @@ public class btellraw {
         } else {
             tellrawObj.content = Text.Serializer.toJson(TextArgumentType.getTextArgument(context, "JSONText"));
         }
-        config.TellrawList.put(ID, tellrawObj);
-        config.saveConfig();
+        Config.tellrawList.put(ID, tellrawObj);
+        Config.saveConfig();
 
-        context.getSource().sendFeedback(Text.literal("Tellraw " + ID + " modified.").formatted(Formatting.GOLD), false);
+        context.getSource().sendFeedback(() -> Text.literal("Tellraw " + ID + " modified.").formatted(Formatting.GOLD), false);
         return 1;
     }
 }

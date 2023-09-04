@@ -1,8 +1,8 @@
-package com.lx.bettertellraw.Config;
+package com.lx862.btellraw.config;
 
 import com.google.gson.*;
-import com.lx.bettertellraw.Data.Tellraws;
-import com.lx.bettertellraw.Main;
+import com.lx862.btellraw.BetterTellraw;
+import com.lx862.btellraw.data.TellrawEntry;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.File;
@@ -11,21 +11,21 @@ import java.nio.file.Path;
 import org.apache.commons.io.FilenameUtils;
 import java.util.*;
 
-public class config {
+public class Config {
     private static final File TELLRAW_DIR = FabricLoader.getInstance().getConfigDir().resolve("btellraw").resolve("tellraws").toFile();
-    public static final Map<String, Tellraws> TellrawList = new HashMap<>();
+    public static final Map<String, TellrawEntry> tellrawList = new HashMap<>();
 
-    public static int loadConfig() {
+    public static int load() {
         if(!Files.exists(TELLRAW_DIR.toPath())) {
-            Main.LOGGER.info("[BetterTellraw] Tellraws folder not found, generating one.");
+            BetterTellraw.LOGGER.info("[BetterTellraw] Tellraws folder not found, generating one.");
             generateConfig();
             /* Load the config again from the files we just generated. */
-            loadConfig();
+            load();
             return 0;
         }
 
-        Main.LOGGER.info("[BetterTellraw] Reading Config...");
-        TellrawList.clear();
+        BetterTellraw.LOGGER.info("[BetterTellraw] Reading Config...");
+        tellrawList.clear();
 
         int loadedTellraw = 0;
 
@@ -33,7 +33,7 @@ public class config {
             loadedTellraw += readTellraws(file.toPath());
         }
 
-        Main.LOGGER.info("[BetterTellraw] " + loadedTellraw + " tellraws Loaded");
+        BetterTellraw.LOGGER.info("[BetterTellraw] " + loadedTellraw + " tellraws Loaded");
         return loadedTellraw;
     }
 
@@ -47,7 +47,7 @@ public class config {
         try {
             Files.write(TELLRAW_DIR.toPath().resolve("example.json"), Collections.singleton(new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(jsonConfig)));
         } catch (Exception e) {
-            Main.LOGGER.warn("[BetterTellraw] Unable to generate Config File!");
+            BetterTellraw.LOGGER.warn("[BetterTellraw] Unable to generate Config File!");
             e.printStackTrace();
         }
     }
@@ -55,8 +55,8 @@ public class config {
     public static void saveConfig() {
         Map<String, JsonObject> configs = new HashMap<>();
 
-        for (Map.Entry<String, Tellraws> tellraws : TellrawList.entrySet()) {
-            Tellraws tellraw = tellraws.getValue();
+        for (Map.Entry<String, TellrawEntry> tellraws : tellrawList.entrySet()) {
+            TellrawEntry tellraw = tellraws.getValue();
 
             JsonObject jsonConfig = configs.getOrDefault(tellraw.fileName, new JsonObject());
             jsonConfig.addProperty(tellraw.ID, tellraw.content);
@@ -67,7 +67,7 @@ public class config {
             try {
                 Files.write(TELLRAW_DIR.toPath().resolve(config.getKey() + ".json"), Collections.singleton(new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(config.getValue())));
             } catch (Exception e) {
-                Main.LOGGER.warn("[BetterTellraw] Unable to generate Config File!");
+                BetterTellraw.LOGGER.warn("[BetterTellraw] Unable to generate Config File!");
                 e.printStackTrace();
             }
         }
@@ -82,13 +82,13 @@ public class config {
                 String tellrawID = e.getKey();
                 String jsontext = e.getValue().getAsString();
                 String fullID = FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()) + "." + tellrawID;
-                Tellraws tellrawObj = new Tellraws(FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()), jsontext, fullID, tellrawID);
-                TellrawList.put(fullID, tellrawObj);
+                TellrawEntry tellrawObj = new TellrawEntry(FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()), jsontext, fullID, tellrawID);
+                tellrawList.put(fullID, tellrawObj);
                 loadedTellraw++;
             }
             return loadedTellraw;
         } catch (Exception e) {
-            Main.LOGGER.error("Failed to load tellraw file " + tellrawLocation.getFileName().toString());
+            BetterTellraw.LOGGER.error("Failed to load tellraw file " + tellrawLocation.getFileName().toString());
             e.printStackTrace();
             return 0;
         }

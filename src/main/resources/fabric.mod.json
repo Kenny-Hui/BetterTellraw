@@ -18,18 +18,14 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.lx.bettertellraw.Main"
+      "com.lx862.btellraw.BetterTellraw"
     ]
   },
   "mixins": [
-    "btellraw.mixins.json"
   ],
 
   "depends": {
-    "fabric": "*",
-    "minecraft": ">=1.19"
-  },
-  "suggests": {
-    "fabric-permissions-api-v0": "*"
+    "fabric-api": "*",
+    "minecraft": ">=1.20"
   }
 }

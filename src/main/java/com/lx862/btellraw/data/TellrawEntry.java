@@ -1,12 +1,12 @@
-package com.lx.bettertellraw.Data;
+package com.lx862.btellraw.data;
 
-public class Tellraws {
+public class TellrawEntry {
     public String fileName;
     public String content;
     public String fullID;
     public String ID;
 
-    public Tellraws(String fileName, String content, String fullID, String ID) {
+    public TellrawEntry(String fileName, String content, String fullID, String ID) {
         this.fileName = fileName;
         this.content = content;
         this.fullID = fullID;
