@@ -17,7 +17,7 @@ public class Config {
 
     public static int load() {
         if(!Files.exists(TELLRAW_DIR.toPath())) {
-            BetterTellraw.LOGGER.info("[BetterTellraw] Tellraws folder not found, generating one.");
+            BetterTellraw.LOGGER.info("[BetterTellraw] Tellraw folder not found, generating one.");
             generateConfig();
             /* Load the config again from the files we just generated. */
             load();
@@ -47,8 +47,8 @@ public class Config {
         try {
             Files.write(TELLRAW_DIR.toPath().resolve("example.json"), Collections.singleton(new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(jsonConfig)));
         } catch (Exception e) {
-            BetterTellraw.LOGGER.warn("[BetterTellraw] Unable to generate Config File!");
             e.printStackTrace();
+            BetterTellraw.LOGGER.warn("[BetterTellraw] Unable to generate config file!");
         }
     }
 
@@ -80,9 +80,9 @@ public class Config {
 
             for(Map.Entry<String, JsonElement> e : jsonConfig.entrySet()) {
                 String tellrawID = e.getKey();
-                String jsontext = e.getValue().getAsString();
+                String jsonText = e.getValue().getAsString();
                 String fullID = FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()) + "." + tellrawID;
-                TellrawEntry tellrawObj = new TellrawEntry(FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()), jsontext, fullID, tellrawID);
+                TellrawEntry tellrawObj = new TellrawEntry(FilenameUtils.getBaseName(tellrawLocation.getFileName().toString()), jsonText, fullID, tellrawID);
                 tellrawList.put(fullID, tellrawObj);
                 loadedTellraw++;
             }

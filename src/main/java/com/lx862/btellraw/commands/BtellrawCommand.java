@@ -4,6 +4,7 @@ import com.lx862.btellraw.config.Config;
 import com.lx862.btellraw.data.TellrawEntry;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -22,13 +23,18 @@ import net.minecraft.command.argument.TextArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 
-public class btellraw {
+public class BtellrawCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         LiteralCommandNode<ServerCommandSource> tellrawNode = CommandManager
@@ -39,7 +45,7 @@ public class btellraw {
         LiteralCommandNode<ServerCommandSource> reloadNode = CommandManager
                 .literal("reload")
                 .requires(Permissions.require("btw.reload", 2))
-                .executes(btellraw::reloadConfig)
+                .executes(BtellrawCommand::reloadConfig)
                 .build();
 
         LiteralCommandNode<ServerCommandSource> sendNode = CommandManager
@@ -55,6 +61,23 @@ public class btellraw {
         LiteralCommandNode<ServerCommandSource> modifyNode = CommandManager
                 .literal("modify")
                 .requires(Permissions.require("btw.modify", 2))
+                .build();
+
+        LiteralCommandNode<ServerCommandSource> previewNode = CommandManager
+                .literal("preview")
+                .requires(Permissions.require("btw.preview", 2))
+                .build();
+
+        LiteralCommandNode<ServerCommandSource> listNode = CommandManager
+                .literal("list")
+                .requires(Permissions.require("btw.list", 2))
+                .executes(BtellrawCommand::listTellraws)
+                .build();
+
+        LiteralCommandNode<ServerCommandSource> aboutNode = CommandManager
+                .literal("about")
+                .requires(Permissions.require("btw.about", 0))
+                .executes(BtellrawCommand::about)
                 .build();
 
         LiteralCommandNode<ServerCommandSource> selectorNode = CommandManager
@@ -88,6 +111,11 @@ public class btellraw {
                                 .executes(ctx -> modifyTellraw(ctx, TextArgumentType.text())))
                 .build();
 
+        ArgumentCommandNode<ServerCommandSource, Integer> pageNode = CommandManager
+                .argument("page", IntegerArgumentType.integer(1))
+                .executes(BtellrawCommand::listTellraws)
+                .build();
+
         ArgumentCommandNode<ServerCommandSource, String> addTellrawTextNode = CommandManager
                 .argument("fileName", StringArgumentType.string()).suggests((commandContext, SuggestionBuilder) -> CommandSource.suggestMatching(Config.tellrawList.values().stream().map(t -> t.fileName).toList(), SuggestionBuilder))
                         .then(CommandManager.argument("id", StringArgumentType.string())
@@ -105,23 +133,24 @@ public class btellraw {
 
         ArgumentCommandNode<ServerCommandSource, String> tellrawID = CommandManager
                 .argument("tellrawID", StringArgumentType.string())
-                .executes(context -> run(StringArgumentType.getString(context, "tellrawID"), context, new String[]{}))
+                .executes(context -> sendTellraw(StringArgumentType.getString(context, "tellrawID"), context, new String[]{}))
                 .suggests((commandContext, suggestionsBuilder) -> CommandSource.suggestMatching(Config.tellrawList.keySet(), suggestionsBuilder))
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, Text> JSONTextNode = CommandManager
                 .argument("Text", TextArgumentType.text())
-                .executes(context -> run(TextArgumentType.getTextArgument(context, "Text"), context))
+                .executes(context -> sendTellraw(TextArgumentType.getTextArgument(context, "Text"), context))
                 .build();
 
         ArgumentCommandNode<ServerCommandSource, String> placeholderNode = CommandManager
                 .argument("placeholders", StringArgumentType.string())
-                .executes(context -> run(StringArgumentType.getString(context, "tellrawID"), context, StringArgumentType.getString(context, "placeholders").split(",")))
+                .executes(context -> sendTellraw(StringArgumentType.getString(context, "tellrawID"), context, StringArgumentType.getString(context, "placeholders").split(",")))
                 .build();
 
         dispatcher.getRoot().addChild(tellrawNode);
 
         tellrawNode.addChild(reloadNode);
+        tellrawNode.addChild(aboutNode);
         tellrawNode.addChild(addNode);
             addNode.addChild(addTellrawNode);
             addNode.addChild(addTellrawTextNode);
@@ -134,13 +163,16 @@ public class btellraw {
                     entitiesNode.addChild(tellrawID);
                     entitiesNode.addChild(JSONTextNode);
                         tellrawID.addChild(placeholderNode);
-
             sendNode.addChild(posNode);
                 posNode.addChild(pos1Node);
                     pos1Node.addChild(pos2Node);
                         pos2Node.addChild(tellrawID);
                         pos2Node.addChild(JSONTextNode);
                             tellrawID.addChild(placeholderNode);
+        tellrawNode.addChild(previewNode);
+            previewNode.addChild(tellrawID);
+        tellrawNode.addChild(listNode);
+            listNode.addChild(pageNode);
     }
 
     public static int reloadConfig(CommandContext<ServerCommandSource> context) {
@@ -149,7 +181,84 @@ public class btellraw {
         return 1;
     }
 
-    public static int run(Collection<ServerPlayerEntity> players, Text msg, CommandContext<ServerCommandSource> context) {
+    public static int about(CommandContext<ServerCommandSource> context) {
+        context.getSource().sendFeedback(() -> Text.literal("Better Tellraw - Enhanced tellraw command and managed tellraw storage").formatted(Formatting.GOLD), false);
+        context.getSource().sendFeedback(() -> Text.literal("https://modrinth.com/mod/bettertellraw").formatted(Formatting.GREEN).formatted(Formatting.UNDERLINE).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://modrinth.com/mod/bettertellraw"))), false);
+        return 1;
+    }
+
+    public static int listTellraws(CommandContext<ServerCommandSource> context) {
+        int tellrawPerPage = 8;
+        int pages = (int)Math.ceil(Config.tellrawList.size() / (double)tellrawPerPage);
+        int page = 0;
+        int offset = 0;
+
+        try {
+            int selectedPage = IntegerArgumentType.getInteger(context, "page")-1;
+
+            if(selectedPage > pages-1) {
+                context.getSource().sendFeedback(() -> Text.literal("Page " + (selectedPage+1) + " does not exists.").formatted(Formatting.RED), false);
+                return 1;
+            }
+            page = selectedPage;
+            offset = tellrawPerPage * selectedPage;
+        } catch (Exception e) {
+            // Page argument not supplied
+        }
+
+        // Separator
+        context.getSource().sendFeedback(() -> Text.literal("There are " + Config.tellrawList.size() + " tellraws loaded.").formatted(Formatting.GREEN), false);
+
+        int i = 0;
+        for(String id : Config.tellrawList.keySet().stream().sorted().toList()) {
+            if(i < offset) {
+                i++;
+                continue;
+            }
+
+            if(i > offset + tellrawPerPage-1) break;
+
+            String order = (i+1) + ". ";
+
+            MutableText finalText = Text.literal(order + id);
+            finalText.formatted(Formatting.YELLOW);
+            finalText.styled(style -> {
+                style = style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/btellraw preview \"" + id + "\""));
+                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to preview " + id).formatted(Formatting.GOLD)));
+                return style;
+            });
+
+            context.getSource().sendFeedback(() -> finalText, false);
+            i++;
+        }
+
+        int ordinalPage = page + 1;
+
+        MutableText leftArrow = Text.literal("←").formatted(Formatting.GOLD);
+        MutableText rightArrow = Text.literal("→").formatted(Formatting.GOLD);
+        MutableText pageText = Text.literal(" [ Page " + (ordinalPage) + "/" + pages + " ] ").formatted(Formatting.GOLD);
+
+        leftArrow.styled(style -> {
+            style = style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/btellraw list " + (ordinalPage - 1)));
+            style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Previous page").formatted(Formatting.YELLOW)));
+            return style;
+        });
+        rightArrow.styled(style -> {
+            style = style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/btellraw list " + (ordinalPage + 1)));
+            style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Next page").formatted(Formatting.YELLOW)));
+            return style;
+        });
+
+        MutableText finalText = Text.literal("");
+        if(page > 0) finalText.append(leftArrow);
+        finalText.append(pageText);
+        if(ordinalPage < pages) finalText.append(rightArrow);
+
+        context.getSource().sendFeedback(() -> finalText, false);
+        return 1;
+    }
+
+    public static int sendTellraw(Collection<ServerPlayerEntity> players, Text msg, CommandContext<ServerCommandSource> context) {
         Text finalText = Placeholders.parseText(msg, PlaceholderContext.of(context.getSource().getServer()));
 
         for (ServerPlayerEntity player : players) {
@@ -158,13 +267,17 @@ public class btellraw {
         return 1;
     }
 
-    public static int run(String msg, CommandContext<ServerCommandSource> context, String[] placeholder) throws CommandSyntaxException {
+    public static int sendTellraw(String msg, CommandContext<ServerCommandSource> context, String[] placeholder) {
         Collection<ServerPlayerEntity> playerList;
         try {
-            Box area = new Box(BlockPosArgumentType.getBlockPos(context, "pos1"), BlockPosArgumentType.getBlockPos(context, "pos2"));
+            Box area = new Box(BlockPosArgumentType.getBlockPos(context, "pos1").toCenterPos(), BlockPosArgumentType.getBlockPos(context, "pos2").toCenterPos());
             playerList = context.getSource().getWorld().getEntitiesByClass(ServerPlayerEntity.class, area, e -> true);
         } catch (Exception e) {
-            playerList = EntityArgumentType.getPlayers(context, "players");
+            try {
+                playerList = EntityArgumentType.getPlayers(context, "players");
+            } catch (Exception f) {
+                playerList = Collections.singletonList(context.getSource().getPlayer());
+            }
         }
 
         TellrawEntry tellraw = Config.tellrawList.get(msg);
@@ -184,24 +297,24 @@ public class btellraw {
 
         Text tellrawComponent;
         try {
-            tellrawComponent = Text.Serializer.fromJson(formattedString);
+            tellrawComponent = Text.Serialization.fromJson(formattedString);
         } catch (Exception ignored) {
             tellrawComponent = TextParserUtils.formatTextSafe(formattedString);
         }
 
-        return run(playerList, tellrawComponent, context);
+        return sendTellraw(playerList, tellrawComponent, context);
     }
 
-    public static int run(Text msg, CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    public static int sendTellraw(Text msg, CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         Collection<ServerPlayerEntity> playerList;
         try {
-            Box area = new Box(BlockPosArgumentType.getBlockPos(context, "pos1"), BlockPosArgumentType.getBlockPos(context, "pos2"));
+            Box area = new Box(BlockPosArgumentType.getBlockPos(context, "pos1").toCenterPos(), BlockPosArgumentType.getBlockPos(context, "pos2").toCenterPos());
             playerList = context.getSource().getWorld().getEntitiesByClass(ServerPlayerEntity.class, area, e -> true);
         } catch (Exception e) {
             playerList = EntityArgumentType.getPlayers(context, "players");
         }
 
-        return run(playerList, msg, context);
+        return sendTellraw(playerList, msg, context);
     }
 
     public static int addTellraw(CommandContext<ServerCommandSource> context, ArgumentType type) {
@@ -217,7 +330,7 @@ public class btellraw {
             Config.tellrawList.put(fullID, tellrawObj);
             Config.saveConfig();
         } else {
-            TellrawEntry tellrawObj = new TellrawEntry(StringArgumentType.getString(context, "fileName"), Text.Serializer.toJson(TextArgumentType.getTextArgument(context, "JSONText")), fullID, ID);
+            TellrawEntry tellrawObj = new TellrawEntry(StringArgumentType.getString(context, "fileName"), Text.Serialization.toJsonString(TextArgumentType.getTextArgument(context, "JSONText")), fullID, ID);
             Config.tellrawList.put(fullID, tellrawObj);
             Config.saveConfig();
         }
@@ -237,7 +350,7 @@ public class btellraw {
         if(type instanceof StringArgumentType) {
             tellrawObj.content = StringArgumentType.getString(context, "text");
         } else {
-            tellrawObj.content = Text.Serializer.toJson(TextArgumentType.getTextArgument(context, "JSONText"));
+            tellrawObj.content = Text.Serialization.toJsonString(TextArgumentType.getTextArgument(context, "JSONText"));
         }
         Config.tellrawList.put(ID, tellrawObj);
         Config.saveConfig();
