@@ -39,7 +39,7 @@ public class BtellrawCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         LiteralCommandNode<ServerCommandSource> tellrawNode = CommandManager
                 .literal("btellraw")
-                .requires(Permissions.require("btw.main", 2))
+                .requires(Permissions.require("btw.main", 0))
                 .build();
 
         LiteralCommandNode<ServerCommandSource> reloadNode = CommandManager
