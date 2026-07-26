@@ -39,6 +39,8 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -279,7 +281,7 @@ public final class BtellrawCommand {
     public static int sendTellraw(String msg, CommandContext<CommandSourceStack> context, String[] placeholder) {
         Collection<ServerPlayer> playerList;
         try {
-            AABB area = new AABB(BlockPosArgument.getBlockPos(context, "pos1").getCenter(), BlockPosArgument.getBlockPos(context, "pos2").getCenter());
+            AABB area = new AABB(new Vec3(BlockPosArgument.getBlockPos(context, "pos1")), new Vec3(BlockPosArgument.getBlockPos(context, "pos2")));
             playerList = context.getSource().getLevel().getEntitiesOfClass(ServerPlayer.class, area, e -> true);
         } catch (Exception e) {
             try {
@@ -318,7 +320,7 @@ public final class BtellrawCommand {
     public static int sendTellraw(Component msg, CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Collection<ServerPlayer> playerList;
         try {
-            AABB area = new AABB(BlockPosArgument.getBlockPos(context, "pos1").getCenter(), BlockPosArgument.getBlockPos(context, "pos2").getCenter());
+            AABB area = new AABB(new Vec3(BlockPosArgument.getBlockPos(context, "pos1")), new Vec3(BlockPosArgument.getBlockPos(context, "pos2")));
             playerList = context.getSource().getLevel().getEntitiesOfClass(ServerPlayer.class, area, e -> true);
         } catch (Exception e) {
             playerList = EntityArgument.getPlayers(context, "players");
